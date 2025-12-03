@@ -1,125 +1,253 @@
-import { getIncidents, submitIncident, resolveIncident } from "./actions";
-import { AlertTriangle, CheckCircle, Shield, Wrench } from "lucide-react";
+import { getIncidents, resolveIncident } from "./actions";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Shield,
+  Wrench,
+  Flame,
+  Building2,
+  Clock,
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
+import PhoneMockup from "@/components/PhoneMockup";
 
 export default async function Home() {
   const incidents = await getIncidents();
 
+  // Calculate stats
+  const openIncidents = incidents.filter((i) => i.status === "Open").length;
+  const criticalIncidents = incidents.filter(
+    (i) => i.priority === "High" && i.status === "Open"
+  ).length;
+  const resolvedToday = incidents.filter((i) => i.status === "Resolved").length;
+
+  const getPriorityClass = (priority: string) => {
+    switch (priority) {
+      case "High":
+        return "priority-critical";
+      case "Medium":
+        return "priority-warning";
+      case "Pending":
+        return "priority-info";
+      default:
+        return "priority-success";
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "Fire":
+        return <Flame className="w-5 h-5" />;
+      case "Security":
+        return <AlertTriangle className="w-5 h-5" />;
+      default:
+        return <Wrench className="w-5 h-5" />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "Fire":
+        return "bg-red-500/20 text-red-400";
+      case "Security":
+        return "bg-amber-500/20 text-amber-400";
+      default:
+        return "bg-blue-500/20 text-blue-400";
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-gray-100">
-      {/* TENANT VIEW (Mobile-ish) */}
-      <div className="bg-white p-6 shadow-md border-b border-gray-200">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Residex Report 📝</h1>
-          <p className="text-gray-500 mb-6">Report an issue in your building instantly.</p>
-
-          <form action={submitIncident} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Issue Type</label>
-              <select name="type" className="w-full p-3 border rounded-lg bg-gray-50">
-                <option value="Maintenance">Maintenance (Leak, Broken Item)</option>
-                <option value="Security">Security (Suspicious Activity)</option>
-                <option value="Fire">Fire / Hazard</option>
-              </select>
+    <main className="min-h-screen">
+      {/* Header */}
+      <header className="glass sticky top-0 z-40 border-b border-[var(--border-subtle)]">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-[var(--foreground)]">
+                  RESIDEX
+                </h1>
+                <p className="text-xs text-[var(--foreground-muted)]">
+                  Incident Management System
+                </p>
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input
-                name="location"
-                type="text"
-                placeholder="e.g. Lobby, Apt 404"
-                className="w-full p-3 border rounded-lg"
-                required
-              />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 live-indicator"></span>
+                <span className="text-sm font-medium text-emerald-400">
+                  System Online
+                </span>
+              </div>
+              <ThemeToggle />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                name="description"
-                placeholder="Describe the issue..."
-                className="w-full p-3 border rounded-lg"
-                rows={3}
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Submit Report
-            </button>
-          </form>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* MANAGER VIEW (Dashboard) */}
-      <div className="p-8 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <Shield className="text-indigo-600" />
-            Command Center
-          </h2>
-          <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
-            Live Feed
-          </span>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="stats-card">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <Activity className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <p className="stats-value text-amber-400">{openIncidents}</p>
+                <p className="stats-label">Open Incidents</p>
+              </div>
+            </div>
+          </div>
+          <div className="stats-card">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                <p className="stats-value text-red-400">{criticalIncidents}</p>
+                <p className="stats-label">Critical</p>
+              </div>
+            </div>
+          </div>
+          <div className="stats-card">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <p className="stats-value text-emerald-400">{resolvedToday}</p>
+                <p className="stats-label">Resolved</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-4">
-          {incidents.map((incident) => (
-            <div
-              key={incident.id}
-              className={`bg-white p-4 rounded-lg shadow-sm border-l-4 flex justify-between items-center ${incident.priority === "High"
-                  ? "border-red-500"
-                  : incident.priority === "Medium"
-                    ? "border-yellow-500"
-                    : "border-blue-500"
-                }`}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className={`p-2 rounded-full ${incident.type === "Security"
-                      ? "bg-red-100 text-red-600"
-                      : "bg-blue-100 text-blue-600"
-                    }`}
-                >
-                  {incident.type === "Security" ? <AlertTriangle /> : <Wrench />}
+        {/* Dashboard Panel - Full Width */}
+        <div className="glass rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--foreground)]">
+                  Command Center
+                </h2>
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  Manager Dashboard - Real-time incident feed
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface)]">
+              <span className="w-2 h-2 rounded-full bg-indigo-400 live-indicator"></span>
+              <span className="text-sm font-medium text-[var(--foreground-muted)]">
+                Live Feed
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {incidents.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-[var(--surface)] flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">
-                    {incident.type} at {incident.location}
-                  </h3>
-                  <p className="text-gray-600">{incident.description}</p>
-                  <div className="flex gap-2 mt-2 text-xs text-gray-400">
-                    <span>{new Date(incident.createdAt).toLocaleTimeString()}</span>
-                    <span>•</span>
-                    <span>ID: #{incident.id}</span>
+                <h3 className="text-lg font-medium text-[var(--foreground)]">
+                  All Clear
+                </h3>
+                <p className="text-[var(--foreground-muted)]">
+                  No active incidents at this time
+                </p>
+              </div>
+            ) : (
+              incidents.map((incident) => (
+                <div
+                  key={incident.id}
+                  className={`incident-card ${getPriorityClass(incident.priority)}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getTypeColor(incident.type)}`}
+                      >
+                        {getTypeIcon(incident.type)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-[var(--foreground)] truncate">
+                            {incident.type} Issue
+                          </h3>
+                          <span className="text-[var(--foreground-muted)]">•</span>
+                          <span className="text-sm text-[var(--foreground-muted)]">
+                            {incident.location}
+                          </span>
+                        </div>
+                        <p className="text-[var(--foreground-muted)] text-sm mb-3 line-clamp-2">
+                          {incident.description}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-[var(--foreground-subtle)]">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(incident.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <span>ID: #{incident.id}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span
+                        className={`badge ${
+                          incident.status === "Resolved"
+                            ? "badge-success"
+                            : incident.priority === "High"
+                            ? "badge-critical"
+                            : incident.priority === "Medium"
+                            ? "badge-warning"
+                            : "badge-info"
+                        }`}
+                      >
+                        {incident.status === "Resolved" ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3" />
+                            Resolved
+                          </>
+                        ) : (
+                          incident.priority
+                        )}
+                      </span>
+                      {incident.status !== "Resolved" && (
+                        <form action={resolveIncident.bind(null, incident.id)}>
+                          <button
+                            type="submit"
+                            className="w-9 h-9 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 flex items-center justify-center transition-colors group"
+                            title="Mark as Resolved"
+                          >
+                            <CheckCircle className="w-4 h-4 text-emerald-400 group-hover:text-emerald-300" />
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${incident.status === "Resolved"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
-                    }`}
-                >
-                  {incident.status}
-                </span>
-                {incident.status !== "Resolved" && (
-                  <form action={resolveIncident.bind(null, incident.id)}>
-                    <button className="text-green-600 hover:bg-green-50 p-2 rounded-full transition-colors">
-                      <CheckCircle />
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-          ))}
+              ))
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Collapsible Phone Mockup */}
+      <PhoneMockup />
     </main>
   );
 }
