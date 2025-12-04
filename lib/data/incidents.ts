@@ -8,6 +8,8 @@ export interface Incident {
     priority: string;
     status: string;
     createdAt: string;
+    resolutionNotes?: string; // Comentarios de cómo se resolvió
+    resolvedAt?: string; // Timestamp de cuándo fue resuelto
 }
 
 export let incidents: Incident[] = [

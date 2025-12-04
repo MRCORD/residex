@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { incidents } from "@/lib/data/incidents";
+import { notifications } from "@/lib/data/notifications";
 
 /**
  * Service for admin-related operations
@@ -20,8 +21,10 @@ function isAdmin(): boolean {
 /**
  * Resolve an incident
  * Only admins can resolve incidents
+ * @param id - The incident ID to resolve
+ * @param resolutionNotes - Optional comments about how the incident was resolved
  */
-export async function resolveIncident(id: number) {
+export async function resolveIncident(id: number, resolutionNotes?: string) {
     // Check if user is admin
     if (!isAdmin()) {
         throw new Error("Unauthorized: Only admins can resolve incidents");
@@ -30,6 +33,22 @@ export async function resolveIncident(id: number) {
     const incident = incidents.find((i) => i.id === id);
     if (incident) {
         incident.status = "Resolved";
+        incident.resolutionNotes = resolutionNotes || "";
+        incident.resolvedAt = new Date().toISOString();
+
+        // Create notification for the tenant
+        const notification = {
+            id: notifications.length + 1,
+            incidentId: id,
+            title: `Incidente #${id} Resuelto`,
+            message: `Tu incidente de ${incident.type} en ${incident.location} ha sido resuelto.`,
+            resolutionNotes: resolutionNotes || "",
+            type: "resolved" as const,
+            createdAt: new Date().toISOString(),
+            read: false,
+        };
+
+        notifications.unshift(notification);
     }
 
     // Invalidate cache to update the dashboard

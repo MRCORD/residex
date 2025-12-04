@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Smartphone,
   Wifi,
@@ -9,11 +9,44 @@ import {
   Send,
   ChevronRight,
   X,
+  Bell,
+  CheckCircle2,
+  ArrowLeft,
+  FileText,
+  Clock,
 } from "lucide-react";
-import { submitIncident } from "@/app/actions";
+import { submitIncident, getTenantNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/app/actions";
+import { type Notification } from "@/lib/data/notifications";
 
 export default function PhoneMockup() {
   const [isOpen, setIsOpen] = useState(true);
+  const [view, setView] = useState<"form" | "notifications">("form");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Load notifications
+  useEffect(() => {
+    loadNotifications();
+    // Poll for new notifications every 2 seconds
+    const interval = setInterval(loadNotifications, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadNotifications = async () => {
+    const notifs = await getTenantNotifications();
+    setNotifications(notifs);
+    setUnreadCount(notifs.filter(n => !n.read).length);
+  };
+
+  const handleMarkAsRead = async (id: number) => {
+    await markNotificationAsRead(id);
+    loadNotifications();
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await markAllNotificationsAsRead();
+    loadNotifications();
+  };
 
   return (
     <>
@@ -67,18 +100,44 @@ export default function PhoneMockup() {
 
             {/* App Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-4 pt-8">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-white/80" />
-                <span className="text-xs font-medium text-white/80 uppercase tracking-wider">
-                  Tenant App
-                </span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-5 h-5 text-white/80" />
+                  <span className="text-xs font-medium text-white/80 uppercase tracking-wider">
+                    Tenant App
+                  </span>
+                </div>
+                {view === "form" && (
+                  <button
+                    onClick={() => setView("notifications")}
+                    className="relative w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                  >
+                    <Bell className="w-4 h-4 text-white" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+                {view === "notifications" && (
+                  <button
+                    onClick={() => setView("form")}
+                    className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-white" />
+                  </button>
+                )}
               </div>
-              <h2 className="text-lg font-bold text-white mt-1">Report Issue</h2>
+              <h2 className="text-lg font-bold text-white">
+                {view === "form" ? "Report Issue" : "Notificaciones"}
+              </h2>
             </div>
 
-            {/* Phone Content - Form */}
+            {/* Phone Content */}
             <div className="p-4 h-[420px] overflow-y-auto">
-              <form action={submitIncident} className="space-y-4">
+              {view === "form" ? (
+                <form action={submitIncident} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-[var(--foreground-muted)] mb-1.5 uppercase tracking-wider">
                     Issue Type
@@ -149,6 +208,89 @@ export default function PhoneMockup() {
                   Hold for 3 seconds for emergency
                 </p>
               </form>
+              ) : (
+                /* Notifications View */
+                <div className="space-y-3">
+                  {notifications.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 rounded-full bg-[var(--surface)] flex items-center justify-center mx-auto mb-4">
+                        <Bell className="w-8 h-8 text-[var(--foreground-muted)]" />
+                      </div>
+                      <h3 className="text-sm font-medium text-[var(--foreground)] mb-1">
+                        No hay notificaciones
+                      </h3>
+                      <p className="text-xs text-[var(--foreground-muted)]">
+                        Recibirás notificaciones cuando se resuelvan tus incidentes
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="w-full text-xs text-indigo-400 hover:text-indigo-300 text-right mb-2"
+                        >
+                          Marcar todas como leídas
+                        </button>
+                      )}
+                      {notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          className={`p-3 rounded-xl border ${
+                            notif.read
+                              ? "bg-[var(--surface)] border-[var(--border-subtle)]"
+                              : "bg-emerald-500/10 border-emerald-500/20"
+                          }`}
+                          onClick={() => !notif.read && handleMarkAsRead(notif.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                                  {notif.title}
+                                </h3>
+                                {!notif.read && (
+                                  <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                                )}
+                              </div>
+                              <p className="text-xs text-[var(--foreground-muted)] mb-2">
+                                {notif.message}
+                              </p>
+                              {notif.resolutionNotes && (
+                                <div className="mb-2 p-2 rounded-lg bg-[var(--background)] border border-[var(--border-subtle)]">
+                                  <div className="flex items-start gap-2">
+                                    <FileText className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[10px] font-medium text-emerald-400 mb-0.5">
+                                        Comentario del administrador:
+                                      </p>
+                                      <p className="text-[10px] text-[var(--foreground-muted)] leading-relaxed">
+                                        {notif.resolutionNotes}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 text-[10px] text-[var(--foreground-subtle)]">
+                                <Clock className="w-3 h-3" />
+                                {new Date(notif.createdAt).toLocaleString("es-ES", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Phone Home Indicator */}
