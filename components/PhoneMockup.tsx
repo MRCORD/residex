@@ -10,7 +10,7 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import { submitIncident } from "@/app/actions";
+import { submitIncident } from "@/app/resident-actions";
 
 export default function PhoneMockup() {
   const [isOpen, setIsOpen] = useState(true);
@@ -20,9 +20,8 @@ export default function PhoneMockup() {
       {/* Collapsed Tab - shows when phone is hidden */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-0 z-50 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-l-xl shadow-lg transition-all duration-300 hover:pr-6 ${
-          isOpen ? "translate-x-full opacity-0" : "translate-x-0 opacity-100"
-        }`}
+        className={`fixed bottom-6 right-0 z-50 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-l-xl shadow-lg transition-all duration-300 hover:pr-6 ${isOpen ? "translate-x-full opacity-0" : "translate-x-0 opacity-100"
+          }`}
       >
         <Smartphone className="w-5 h-5" />
         <span className="text-sm font-medium">Tenant App</span>
@@ -31,11 +30,10 @@ export default function PhoneMockup() {
 
       {/* Phone Mockup */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
-          isOpen
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${isOpen
             ? "translate-x-0 opacity-100 scale-100"
             : "translate-x-[120%] opacity-0 scale-95"
-        }`}
+          }`}
       >
         {/* Close Button */}
         <button

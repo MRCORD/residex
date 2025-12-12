@@ -1,4 +1,4 @@
-import { getIncidents, resolveIncident } from "./actions";
+import { getIncidents, resolveIncident } from "./admin-actions";
 import {
   AlertTriangle,
   CheckCircle,
@@ -327,15 +327,14 @@ export default async function Home() {
 
                   <div className="flex items-center gap-3 shrink-0">
                     <span
-                      className={`badge ${
-                        incident.status === "Resolved"
+                      className={`badge ${incident.status === "Resolved"
                           ? "badge-success"
                           : incident.priority === "High"
-                          ? "badge-critical"
-                          : incident.priority === "Medium"
-                          ? "badge-warning"
-                          : "badge-info"
-                      }`}
+                            ? "badge-critical"
+                            : incident.priority === "Medium"
+                              ? "badge-warning"
+                              : "badge-info"
+                        }`}
                     >
                       {incident.status === "Resolved" ? (
                         <>
