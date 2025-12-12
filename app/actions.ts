@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 // MOCK DATABASE
 // In a real app, this would be a SQL DB
 let incidents = [
@@ -44,8 +46,8 @@ export async function submitIncident(formData: FormData) {
 
     incidents.unshift(newIncident);
 
-    // BUG: Missing revalidatePath('/')
-    // The UI will not update until the user manually refreshes.
+    // Revalidate the dashboard path to show the new incident
+    revalidatePath('/');
 }
 
 export async function resolveIncident(id: number) {
@@ -54,5 +56,6 @@ export async function resolveIncident(id: number) {
         incident.status = "Resolved";
     }
 
-    // BUG: Also missing revalidatePath here
+    // Revalidate the dashboard path to reflect the status change
+    revalidatePath('/');
 }
