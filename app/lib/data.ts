@@ -1,7 +1,8 @@
+import { Incident } from "./types";
 
 // MOCK DATABASE
 // In a real app, this would be a SQL DB
-export const incidents = [
+export const incidents: Incident[] = [
     {
         id: 1,
         type: "Maintenance",
@@ -10,6 +11,10 @@ export const incidents = [
         priority: "High",
         status: "Open",
         createdAt: "2023-10-01T10:00:00Z",
+        resolvedAt: null,
+        resolutionComments: null,
+        tenantNotified: false,
+        photos: [],
     },
     {
         id: 2,
@@ -19,5 +24,9 @@ export const incidents = [
         priority: "Medium",
         status: "Resolved",
         createdAt: "2023-10-02T14:30:00Z",
+        resolvedAt: "2023-10-02T15:45:00Z",
+        resolutionComments: "Security team secured the door and notified building maintenance.",
+        tenantNotified: true,
+        photos: [],
     },
 ];
