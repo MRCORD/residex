@@ -1,4 +1,5 @@
-import { getIncidents, resolveIncident } from "./actions";
+import { getIncidents } from "./admin-actions";
+import { Incident } from "./lib/types";
 import {
   AlertTriangle,
   CheckCircle,
@@ -18,19 +19,26 @@ import {
   Building2,
   Zap,
   Timer,
+  Bell,
+  Image,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import PhoneMockup from "@/components/PhoneMockup";
+import ResolveButton from "@/components/ResolveButton";
+
+// Force dynamic rendering to always show fresh data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function Home() {
   const incidents = await getIncidents();
 
   // Calculate stats
-  const openIncidents = incidents.filter((i) => i.status === "Open").length;
+  const openIncidents = incidents.filter((i: Incident) => i.status === "Open").length;
   const criticalIncidents = incidents.filter(
-    (i) => i.priority === "High" && i.status === "Open"
+    (i: Incident) => i.priority === "High" && i.status === "Open"
   ).length;
-  const resolvedToday = incidents.filter((i) => i.status === "Resolved").length;
+  const resolvedToday = incidents.filter((i: Incident) => i.status === "Resolved").length;
 
   const getPriorityClass = (priority: string) => {
     switch (priority) {
@@ -287,19 +295,19 @@ export default async function Home() {
               </p>
             </div>
           ) : (
-            incidents.map((incident) => (
+            incidents.map((incident: Incident) => (
               <div
                 key={incident.id}
                 className={`incident-card ${getPriorityClass(incident.priority)}`}
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-4 flex-1">
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getTypeColor(incident.type)}`}
                     >
                       {getTypeIcon(incident.type)}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-[var(--foreground)] truncate">
                           {incident.type} Issue
@@ -322,20 +330,84 @@ export default async function Home() {
                         </span>
                         <span>ID: #{incident.id}</span>
                       </div>
+
+                      {/* Photos Display - shown for all incidents */}
+                      {incident.photos && incident.photos.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Image className="w-3.5 h-3.5 text-purple-400" />
+                            <span className="text-xs font-medium text-[var(--foreground-muted)]">
+                              Photos ({incident.photos.length})
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {incident.photos.slice(0, 3).map((photo, idx) => (
+                              <div
+                                key={idx}
+                                className="aspect-square rounded-lg overflow-hidden bg-[var(--surface)] border border-[var(--border-subtle)] cursor-pointer hover:opacity-80 transition-opacity"
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`Photo ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Resolution Details - shown inline when resolved */}
+                      {incident.status === "Resolved" && incident.resolvedAt && (
+                        <div className="mt-4 pt-4 border-t border-[var(--border-subtle)] space-y-2">
+                          <div className="flex items-center gap-2 text-xs">
+                            <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-[var(--foreground-muted)]">
+                              Resolved at:{" "}
+                              <span className="text-[var(--foreground)]">
+                                {new Date(incident.resolvedAt).toLocaleString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </span>
+                          </div>
+                          {incident.resolutionComments && (
+                            <div className="text-xs">
+                              <span className="text-[var(--foreground-muted)]">
+                                Resolution:{" "}
+                              </span>
+                              <span className="text-[var(--foreground)]">
+                                {incident.resolutionComments}
+                              </span>
+                            </div>
+                          )}
+                          {incident.tenantNotified && (
+                            <div className="flex items-center gap-1.5 text-xs mt-1">
+                              <Bell className="w-3.5 h-3.5 text-indigo-400" />
+                              <span className="text-indigo-400 font-medium">
+                                Tenant Notified
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
                     <span
-                      className={`badge ${
-                        incident.status === "Resolved"
-                          ? "badge-success"
-                          : incident.priority === "High"
+                      className={`badge ${incident.status === "Resolved"
+                        ? "badge-success"
+                        : incident.priority === "High"
                           ? "badge-critical"
                           : incident.priority === "Medium"
-                          ? "badge-warning"
-                          : "badge-info"
-                      }`}
+                            ? "badge-warning"
+                            : "badge-info"
+                        }`}
                     >
                       {incident.status === "Resolved" ? (
                         <>
@@ -347,15 +419,18 @@ export default async function Home() {
                       )}
                     </span>
                     {incident.status !== "Resolved" && (
-                      <form action={resolveIncident.bind(null, incident.id)}>
-                        <button
-                          type="submit"
-                          className="w-9 h-9 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 flex items-center justify-center transition-colors group"
-                          title="Mark as Resolved"
-                        >
-                          <CheckCircle className="w-4 h-4 text-emerald-400 group-hover:text-emerald-300" />
-                        </button>
-                      </form>
+                      <ResolveButton
+                        incident={{
+                          id: incident.id,
+                          type: incident.type,
+                          description: incident.description,
+                          location: incident.location,
+                          priority: incident.priority,
+                          status: incident.status,
+                          resolvedAt: incident.resolvedAt,
+                          resolutionComments: incident.resolutionComments,
+                        }}
+                      />
                     )}
                   </div>
                 </div>
@@ -366,7 +441,7 @@ export default async function Home() {
       </div>
 
       {/* Collapsible Phone Mockup */}
-      <PhoneMockup />
+      <PhoneMockup incidents={incidents} />
     </DashboardLayout>
   );
 }

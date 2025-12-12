@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Smartphone,
   Wifi,
@@ -9,20 +9,84 @@ import {
   Send,
   ChevronRight,
   X,
+  Bell,
 } from "lucide-react";
-import { submitIncident } from "@/app/actions";
+import { submitIncident } from "@/app/resident-actions";
+import { Incident } from "@/app/lib/types";
+import TenantNotification from "./TenantNotification";
+import ImageUpload from "./ImageUpload";
 
-export default function PhoneMockup() {
+interface PhoneMockupProps {
+  incidents: Incident[];
+}
+
+export default function PhoneMockup({ incidents }: PhoneMockupProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Count unread notifications
+  const unreadCount = incidents.filter(
+    (i) => i.status === "Resolved" && i.tenantNotified
+  ).length;
+
+  // Auto-show notifications when there are new ones
+  useEffect(() => {
+    console.log('📱 [TENANT APP] Incidents received:', incidents.length);
+    console.log('📱 [TENANT APP] Unread notifications:', unreadCount);
+    console.log('📱 [TENANT APP] Resolved incidents:', incidents.filter(i => i.status === "Resolved"));
+
+    if (unreadCount > 0) {
+      console.log('📱 [TENANT APP] Auto-showing notifications');
+      setShowNotifications(true);
+    }
+  }, [incidents, unreadCount]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+
+    // Add photos to form data
+    photos.forEach((photo) => {
+      formData.append('photos', photo);
+    });
+
+    try {
+      await submitIncident(formData);
+
+      console.log('📝 [TENANT APP] Incident submitted, resetting form...');
+
+      // Reset form using ref
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+
+      // Reset state
+      setPhotos([]);
+      setResetKey(prev => prev + 1); // Trigger ImageUpload reset
+
+      console.log('✅ [TENANT APP] Form reset successfully');
+    } catch (error) {
+      console.error('Error submitting incident:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
+      {/* Tenant Notifications */}
+      {showNotifications && <TenantNotification incidents={incidents} />}
       {/* Collapsed Tab - shows when phone is hidden */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-0 z-50 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-l-xl shadow-lg transition-all duration-300 hover:pr-6 ${
-          isOpen ? "translate-x-full opacity-0" : "translate-x-0 opacity-100"
-        }`}
+        className={`fixed bottom-6 right-0 z-50 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-l-xl shadow-lg transition-all duration-300 hover:pr-6 ${isOpen ? "translate-x-full opacity-0" : "translate-x-0 opacity-100"
+          }`}
       >
         <Smartphone className="w-5 h-5" />
         <span className="text-sm font-medium">Tenant App</span>
@@ -31,11 +95,10 @@ export default function PhoneMockup() {
 
       {/* Phone Mockup */}
       <div
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
-          isOpen
-            ? "translate-x-0 opacity-100 scale-100"
-            : "translate-x-[120%] opacity-0 scale-95"
-        }`}
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${isOpen
+          ? "translate-x-0 opacity-100 scale-100"
+          : "translate-x-[120%] opacity-0 scale-95"
+          }`}
       >
         {/* Close Button */}
         <button
@@ -67,18 +130,33 @@ export default function PhoneMockup() {
 
             {/* App Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-4 pt-8">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-white/80" />
-                <span className="text-xs font-medium text-white/80 uppercase tracking-wider">
-                  Tenant App
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-5 h-5 text-white/80" />
+                  <span className="text-xs font-medium text-white/80 uppercase tracking-wider">
+                    Tenant App
+                  </span>
+                </div>
+                {/* Notification Bell */}
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                  title="View notifications"
+                >
+                  <Bell className="w-4 h-4 text-white" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
               </div>
               <h2 className="text-lg font-bold text-white mt-1">Report Issue</h2>
             </div>
 
             {/* Phone Content - Form */}
             <div className="p-4 h-[420px] overflow-y-auto">
-              <form action={submitIncident} className="space-y-4">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-[var(--foreground-muted)] mb-1.5 uppercase tracking-wider">
                     Issue Type
@@ -119,12 +197,21 @@ export default function PhoneMockup() {
                   />
                 </div>
 
+                {/* Photo Upload */}
+                <ImageUpload
+                  maxImages={3}
+                  maxSizeMB={5}
+                  onImagesChange={setPhotos}
+                  resetTrigger={resetKey}
+                />
+
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
-                  Submit Report
+                  {isSubmitting ? "Submitting..." : "Submit Report"}
                 </button>
 
                 {/* Divider */}
